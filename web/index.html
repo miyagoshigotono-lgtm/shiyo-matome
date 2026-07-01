@@ -1,0 +1,1304 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>仕様カードめくり</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; overflow-x: hidden; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', Roboto, sans-serif;
+      background: #f5f5f5;
+      color: #333;
+    }
+    .container {
+      max-width: 100%;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    /* ===== 共通トップナビ ===== */
+    .top-nav {
+      max-width: 620px;
+      margin: 0 auto 20px auto;
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+    .top-nav button {
+      background: white;
+      border: 1px solid #ddd;
+      color: #555;
+      padding: 7px 14px;
+      font-size: 12px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .top-nav button:hover { background: #0066cc; color: white; border-color: #0066cc; }
+
+    /* ===== 説明画面 ===== */
+    .guide-screen {
+      max-width: 620px;
+      margin: 0 auto 40px auto;
+      background: white;
+      border-radius: 12px;
+      padding: 50px 40px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+    }
+    .guide-screen h1 {
+      font-size: 26px;
+      color: #0066cc;
+      margin-bottom: 10px;
+      font-weight: 700;
+    }
+    .guide-screen .guide-subtitle {
+      font-size: 14px;
+      color: #888;
+      margin-bottom: 36px;
+    }
+    .guide-section-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #222;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #0066cc;
+      display: inline-block;
+    }
+    .guide-steps {
+      list-style: none;
+      margin-bottom: 36px;
+    }
+    .guide-steps li {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      margin-bottom: 20px;
+      font-size: 15px;
+      line-height: 1.7;
+      color: #444;
+    }
+    .guide-step-num {
+      flex-shrink: 0;
+      width: 32px;
+      height: 32px;
+      background: #0066cc;
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .guide-step-text strong { color: #222; }
+    .guide-start-btn {
+      display: block;
+      width: 100%;
+      max-width: 300px;
+      margin: 0 auto;
+      background: #0066cc;
+      color: white;
+      border: none;
+      padding: 14px 40px;
+      font-size: 17px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.2s;
+    }
+    .guide-start-btn:hover { background: #0052a3; }
+
+    /* ===== スタート画面 ===== */
+    .start-screen {
+      max-width: 600px;
+      margin: 0 auto 40px auto;
+      background: white;
+      border-radius: 8px;
+      padding: 60px 40px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .start-screen h1 {
+      font-size: 28px;
+      margin-bottom: 40px;
+      color: #222;
+      font-weight: 600;
+    }
+    .start-screen input {
+      width: 100%;
+      max-width: 400px;
+      padding: 12px;
+      font-size: 16px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .start-screen button.primary-btn {
+      background: #0066cc;
+      color: white;
+      border: none;
+      padding: 12px 50px;
+      font-size: 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .start-screen button.primary-btn:hover { background: #0052a3; }
+
+    /* ===== 既存工務店一覧 ===== */
+    .koumuten-list-section {
+      margin-top: 40px;
+      text-align: left;
+    }
+    .koumuten-list-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #888;
+      margin-bottom: 10px;
+      letter-spacing: 0.5px;
+    }
+    .koumuten-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      max-height: 180px;
+      overflow-y: auto;
+      padding: 4px;
+    }
+    .koumuten-chip {
+      background: #f0f4f8;
+      border: 1px solid #d8e4f0;
+      color: #0066cc;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .koumuten-chip:hover { background: #0066cc; color: white; }
+    .koumuten-list-empty { font-size: 13px; color: #bbb; padding: 8px; }
+
+    /* ===== ヒアリング画面（上下分割） ===== */
+    .hearing-screen {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 40px);
+    }
+    .hearing-screen.active { display: flex; }
+
+    .hearing-top { flex: 0 0 auto; }
+    .hearing-header {
+      max-width: 700px;
+      margin: 0 auto 16px auto;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #eee;
+    }
+    .hearing-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .koumuten-name { font-size: 18px; font-weight: 600; color: #0066cc; }
+    .hearing-mini-nav button {
+      background: transparent;
+      border: 1px solid #ddd;
+      color: #888;
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 12px;
+      cursor: pointer;
+    }
+    .hearing-mini-nav button:hover { background: #f0f0f0; }
+    .progress-info { font-size: 12px; color: #999; margin-bottom: 6px; }
+
+    /* 横スクロールバー（range入力）でカードを自由にめくる */
+    .progress-slider-wrap { position: relative; width: 100%; }
+    .progress-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: #eee;
+      outline: none;
+      cursor: pointer;
+    }
+    .progress-slider::-webkit-slider-runnable-track {
+      height: 6px;
+      border-radius: 3px;
+      background: linear-gradient(to right, #0066cc var(--fill, 0%), #eee var(--fill, 0%));
+    }
+    .progress-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #0066cc;
+      border: 2px solid white;
+      box-shadow: 0 0 4px rgba(0,0,0,0.3);
+      margin-top: -5px;
+      cursor: pointer;
+    }
+    .progress-slider::-moz-range-track {
+      height: 6px;
+      border-radius: 3px;
+      background: #eee;
+    }
+    .progress-slider::-moz-range-progress {
+      height: 6px;
+      border-radius: 3px;
+      background: #0066cc;
+    }
+    .progress-slider::-moz-range-thumb {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #0066cc;
+      border: 2px solid white;
+      cursor: pointer;
+    }
+
+    .slider-stage { position: relative; width: 100%; height: 260px; margin-bottom: 10px; }
+
+    .question-card {
+      position: absolute;
+      width: 520px;
+      background: white;
+      border-radius: 8px;
+      padding: 20px 24px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+      transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+      opacity: 0;
+      pointer-events: none;
+    }
+    .question-card.prev-card { left: 0; transform: translateX(-30%) scale(0.85); opacity: 0.3; }
+    .question-card.current-card {
+      left: 50%; transform: translateX(-50%) scale(1); opacity: 1;
+      pointer-events: auto; border-left: 5px solid #0066cc; z-index: 10;
+    }
+    .question-card.next-card { left: 100%; transform: translateX(-70%) scale(0.88); opacity: 0.6; z-index: 5; }
+    .question-card.next-next-card { left: 100%; transform: translateX(-40%) scale(0.78); opacity: 0.3; z-index: 2; }
+
+    .question-category {
+      font-size: 11px; color: #999; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;
+    }
+    .question-title { font-size: 16px; font-weight: 600; margin-bottom: 12px; color: #222; line-height: 1.4; }
+
+    .answer-area { display: flex; gap: 10px; flex-direction: column; }
+    .custom-input {
+      padding: 10px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;
+      font-family: inherit; width: 100%; resize: none; min-height: 70px; line-height: 1.6;
+    }
+    .custom-input:focus { outline: none; border-color: #0066cc; box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.15); }
+    .input-label { font-size: 12px; color: #777; margin-bottom: 4px; display: flex; justify-content: space-between;}
+    .shortcut-tip { color: #0066cc; font-weight: bold; }
+
+    .nav-buttons {
+      max-width: 700px; margin: 0 auto; display: flex; gap: 10px;
+      justify-content: space-between; padding-top: 10px; padding-bottom: 10px;
+    }
+    .nav-buttons button {
+      padding: 10px 24px; border: none; border-radius: 4px; cursor: pointer;
+      font-size: 14px; font-weight: 500; transition: all 0.2s;
+    }
+    .btn-prev { background: #ddd; color: #333; }
+    .btn-prev:hover:not(:disabled) { background: #ccc; }
+    .btn-prev:disabled { opacity: 0.3; cursor: not-allowed; }
+    .btn-next { background: #0066cc; color: white; }
+    .btn-next:hover { background: #0052a3; }
+    .btn-preview { background: #FF9800; color: white; }
+    .btn-preview:hover { background: #e68900; }
+
+    .hearing-bottom {
+      flex: 1 1 auto; min-height: 0; border-top: 2px solid #e0e0e0; margin-top: 6px;
+      display: flex; flex-direction: column;
+    }
+    .live-preview-header {
+      display: flex; align-items: center; justify-content: space-between; padding: 10px 16px;
+      background: #f0f4f8; border-bottom: 1px solid #ddd; flex-shrink: 0;
+    }
+    .live-preview-title { font-size: 14px; font-weight: 700; color: #0066cc; }
+    .live-preview-badge {
+      font-size: 11px; background: #0066cc; color: white; padding: 2px 10px; border-radius: 10px; font-weight: 600;
+    }
+    .live-preview-right { display: flex; align-items: center; gap: 12px; }
+    .line-counter { font-size: 13px; font-weight: 700; color: #555; transition: color 0.3s; }
+    .line-counter.over-limit { color: #d32f2f; }
+    .line-warning {
+      display: none; background: #fff3e0; border: 1px solid #ff9800; border-radius: 4px;
+      padding: 8px 16px; font-size: 13px; color: #e65100; font-weight: 600; text-align: center; flex-shrink: 0;
+    }
+    .line-warning.visible { display: block; }
+    .live-preview-body {
+      flex: 1 1 auto; overflow-y: auto; padding: 16px 24px; background: white; border-radius: 0 0 8px 8px;
+    }
+    .live-preview-empty { color: #bbb; font-size: 14px; text-align: center; padding: 30px; }
+
+    .preview-category-title {
+      font-size: 15px; font-weight: 700; color: #222; margin-top: 20px; margin-bottom: 10px; letter-spacing: 1px;
+    }
+    .preview-category-title::before { content: "≪"; }
+    .preview-category-title::after { content: "≫"; }
+    .preview-line { font-size: 13px; color: #333; line-height: 1.8; margin-bottom: 3px; }
+    .preview-line.unanswered { color: #bbb; }
+    .preview-subline { font-size: 12px; color: #666; line-height: 1.8; margin-left: 1.4em; margin-bottom: 3px; }
+    .preview-item-block { margin-bottom: 12px; }
+
+    /* ===== プレビュー全画面（印刷用） ===== */
+    .preview-screen {
+      max-width: 700px; margin: 0 auto; background: white; border-radius: 8px;
+      padding: 50px 60px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .preview-header { margin-bottom: 40px; padding-bottom: 20px; border-bottom: 1px solid #ccc; }
+    .preview-title { font-size: 22px; font-weight: 600; color: #222; }
+    .preview-buttons {
+      margin-top: 40px; display: flex; gap: 10px; padding-top: 20px; border-top: 1px solid #eee;
+    }
+    .preview-buttons button {
+      padding: 10px 24px; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 500;
+    }
+    .btn-back { background: #ddd; color: #333; }
+    .btn-copy { background: #4CAF50; color: white; }
+
+    /* ===== 質問編集画面 ===== */
+    .edit-screen {
+      max-width: 900px; margin: 0 auto 40px auto; background: white; border-radius: 8px;
+      padding: 36px 40px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .edit-header {
+      display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px;
+      padding-bottom: 16px; border-bottom: 2px solid #0066cc;
+    }
+    .edit-header h2 { font-size: 20px; color: #222; }
+    .edit-header-buttons { display: flex; gap: 10px; }
+    .edit-header-buttons button {
+      padding: 9px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 600;
+    }
+    .btn-save-questions { background: #0066cc; color: white; }
+    .btn-save-questions:hover { background: #0052a3; }
+    .btn-add-question { background: #4CAF50; color: white; }
+    .btn-add-question:hover { background: #3d8b40; }
+
+    .edit-table-head, .edit-row {
+      display: grid;
+      grid-template-columns: 90px 140px 1fr 1fr 110px;
+      gap: 10px;
+      align-items: start;
+      padding: 8px 0;
+    }
+    .edit-table-head {
+      font-size: 11px; color: #999; font-weight: 700; border-bottom: 1px solid #eee; padding-bottom: 8px;
+    }
+    .edit-row { border-bottom: 1px solid #f2f2f2; }
+    .edit-row input, .edit-row textarea {
+      width: 100%; border: 1px solid #ddd; border-radius: 4px; padding: 7px 9px;
+      font-size: 13px; font-family: inherit; resize: vertical;
+    }
+    .edit-row textarea { min-height: 38px; }
+    .edit-row .qid-display { font-size: 11px; color: #aaa; padding-top: 8px; }
+    .edit-row-controls { display: flex; gap: 4px; align-items: flex-start; padding-top: 2px; }
+    .edit-row-controls button {
+      width: 26px; height: 26px; border: 1px solid #ddd; background: white; border-radius: 4px;
+      cursor: pointer; font-size: 12px; color: #666;
+    }
+    .edit-row-controls button:hover { background: #f0f0f0; }
+    .edit-row-controls .btn-del { color: #d32f2f; border-color: #f0c0c0; }
+    .edit-row-controls .btn-del:hover { background: #fdecea; }
+    .edit-empty-note { color: #bbb; font-size: 13px; padding: 30px 0; text-align: center; }
+
+    /* ===== 前回の続き 再開バナー ===== */
+    .resume-banner {
+      display: flex; align-items: center; gap: 14px; max-width: 400px; margin: 0 auto 28px auto;
+      padding: 14px 16px; background: linear-gradient(135deg, #e8f2ff 0%, #f0f7ff 100%);
+      border: 1px solid #b8d8ff; border-radius: 10px; box-shadow: 0 2px 8px rgba(0, 102, 204, 0.08); text-align: left;
+    }
+    .resume-banner-icon {
+      flex-shrink: 0; width: 38px; height: 38px; background: #0066cc; color: white; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; font-size: 18px;
+    }
+    .resume-banner-text { flex: 1 1 auto; min-width: 0; }
+    .resume-banner-label { display: block; font-size: 12px; color: #0066cc; font-weight: 700; margin-bottom: 2px; }
+    .resume-banner-detail {
+      display: block; font-size: 13px; color: #444; font-weight: 600;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .resume-banner-btn {
+      flex-shrink: 0; background: #0066cc; color: white; border: none; padding: 9px 16px; font-size: 13px;
+      border-radius: 6px; cursor: pointer; font-weight: 600; transition: background 0.2s; white-space: nowrap;
+    }
+    .resume-banner-btn:hover { background: #0052a3; }
+    .resume-banner-clear {
+      flex-shrink: 0; background: transparent; color: #999; border: none; font-size: 18px;
+      cursor: pointer; padding: 0 4px; line-height: 1;
+    }
+    .resume-banner-clear:hover { color: #d32f2f; }
+
+    @media print {
+      body { background: white; }
+      .container { max-width: 100%; padding: 0; }
+      .preview-buttons { display: none; }
+      .preview-screen { box-shadow: none; padding: 30px 10px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- ===== 説明画面（起動時） ===== -->
+  <div id="guideScreen" class="screen active">
+    <div class="top-nav">
+      <button onclick="openEditScreen()">✏️ 質問編集</button>
+    </div>
+    <div class="guide-screen">
+      <h1>📋 仕様カードめくり</h1>
+      <div class="guide-subtitle">工務店ごとの仕様情報を効率的にヒアリングするためのツールです</div>
+
+      <div id="resumeBannerGuide" class="resume-banner" style="display:none;">
+        <div class="resume-banner-icon">↻</div>
+        <div class="resume-banner-text">
+          <span class="resume-banner-label">前回の続きがあります</span>
+          <span class="resume-banner-detail" id="resumeDetailGuide"></span>
+        </div>
+        <button class="resume-banner-btn" onclick="resumeSession()">続きから →</button>
+        <button class="resume-banner-clear" onclick="clearSessionAndHide()" title="この記録を消す">×</button>
+      </div>
+
+      <div class="guide-section-title">使い方</div>
+      <ul class="guide-steps">
+        <li>
+          <div class="guide-step-num">1</div>
+          <div class="guide-step-text">
+            <strong>工務店名を入力 or 一覧から選択してスタート</strong><br>
+            新規なら名前を入力、既存なら一覧から選ぶだけで続きから編集できます。
+          </div>
+        </li>
+        <li>
+          <div class="guide-step-num">2</div>
+          <div class="guide-step-text">
+            <strong>質問に回答</strong><br>
+            質問カードが表示されます。工務店の特別な仕様があれば記入してください。
+          </div>
+        </li>
+        <li>
+          <div class="guide-step-num">3</div>
+          <div class="guide-step-text">
+            <strong>仕様があれば → 記入して【次へ】</strong><br>
+            工務店独自の仕様がある項目は、内容を入力してから次へ進みます。
+          </div>
+        </li>
+        <li>
+          <div class="guide-step-num">4</div>
+          <div class="guide-step-text">
+            <strong>進捗バーをドラッグして好きな質問へジャンプ可</strong><br>
+            上部のスライダーをドラッグすると、任意の問題番号へ直接移動できます。
+          </div>
+        </li>
+      </ul>
+
+      <button class="guide-start-btn" onclick="showScreen('startScreen'); loadKoumutenList();">はじめる →</button>
+    </div>
+  </div>
+
+  <!-- ===== スタート画面 ===== -->
+  <div id="startScreen" class="screen">
+    <div class="top-nav">
+      <button onclick="openEditScreen()">✏️ 質問編集</button>
+    </div>
+    <div class="start-screen">
+      <h1>工務店仕様ヒアリング</h1>
+      <input type="text" id="koumenName" placeholder="工務店名を入力（新規）">
+      <button class="primary-btn" onclick="startHearing()">スタート</button>
+
+      <div id="resumeBannerStart" class="resume-banner" style="display:none; margin-top: 28px; margin-bottom: 0;">
+        <div class="resume-banner-icon">↻</div>
+        <div class="resume-banner-text">
+          <span class="resume-banner-label">前回の続きがあります</span>
+          <span class="resume-banner-detail" id="resumeDetailStart"></span>
+        </div>
+        <button class="resume-banner-btn" onclick="resumeSession()">続きから →</button>
+        <button class="resume-banner-clear" onclick="clearSessionAndHide()" title="この記録を消す">×</button>
+      </div>
+
+      <div class="koumuten-list-section">
+        <div class="koumuten-list-title">📂 既存の工務店（クリックで呼び出し）</div>
+        <div class="koumuten-list" id="koumutenList">
+          <div class="koumuten-list-empty">読み込み中...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== ヒアリング画面（上下分割） ===== -->
+  <div id="hearingScreen" class="screen hearing-screen">
+    <div class="hearing-top">
+      <div class="hearing-header">
+        <div class="hearing-header-row">
+          <div class="koumuten-name" id="hearingKoumenName"></div>
+          <div class="hearing-mini-nav">
+            <button onclick="showScreen('startScreen'); loadKoumutenList();">🏠 ホーム</button>
+            <button onclick="openEditScreen()">✏️ 質問編集</button>
+          </div>
+        </div>
+        <div class="progress-info" id="progressInfo"></div>
+        <div class="progress-slider-wrap">
+          <input type="range" class="progress-slider" id="progressSlider" min="0" max="0" value="0"
+                 oninput="onSliderInput(this.value)">
+        </div>
+      </div>
+
+      <div class="slider-stage" id="sliderStage"></div>
+
+      <div class="nav-buttons">
+        <button class="btn-prev" id="btnPrev" onclick="prevQuestion()">← 前へ</button>
+        <button class="btn-next" id="btnNext" onclick="nextQuestion()">次へ (Ctrl+Enter) →</button>
+        <button class="btn-preview" onclick="showPreview()">仕様書を見る</button>
+      </div>
+    </div>
+
+    <div class="hearing-bottom">
+      <div class="live-preview-header">
+        <span class="live-preview-title">📄 仕様書プレビュー</span>
+        <div class="live-preview-right">
+          <span class="line-counter" id="lineCounter">0 / 50 行</span>
+          <span class="live-preview-badge">リアルタイム</span>
+        </div>
+      </div>
+      <div class="line-warning" id="lineWarning">⚠️ 50行を超えています！Excelに収まるよう内容を調整してください</div>
+      <div class="live-preview-body" id="livePreviewBody">
+        <div class="live-preview-empty">入力内容がここにリアルタイムで表示されます</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== プレビュー全画面（印刷用） ===== -->
+  <div id="previewScreen" class="screen preview-screen">
+    <div class="preview-header"><div class="preview-title" id="previewTitle"></div></div>
+    <div id="previewContent"></div>
+    <div class="preview-buttons">
+      <button class="btn-back" onclick="backToHearing()">← 戻る</button>
+      <button class="btn-copy" id="btnCopy" onclick="copyToClipboard()">📋 全文コピー</button>
+    </div>
+  </div>
+
+  <!-- ===== 質問編集画面 ===== -->
+  <div id="editScreen" class="screen">
+    <div class="top-nav">
+      <button onclick="exitEditScreen()">← 戻る</button>
+    </div>
+    <div class="edit-screen">
+      <div class="edit-header">
+        <h2>✏️ 質問編集</h2>
+        <div class="edit-header-buttons">
+          <button class="btn-add-question" onclick="addEditRow()">＋ 質問を追加</button>
+          <button class="btn-save-questions" onclick="saveEditedQuestions()">💾 保存する</button>
+        </div>
+      </div>
+      <div class="edit-table-head">
+        <div>質問ID</div><div>カテゴリ</div><div>タイトル</div><div>通常仕様</div><div>並び替え/削除</div>
+      </div>
+      <div id="editRowsContainer"></div>
+      <div id="editEmptyNote" class="edit-empty-note" style="display:none;">質問がありません。「＋ 質問を追加」から作成してください。</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  let questions = [];
+  let answers = {};
+  let currentIndex = 0;
+  let koumenName = '';
+  let editQuestions = [];
+  let previousScreenBeforeEdit = 'guideScreen';
+
+  // ===================================================================
+  // ローカルストレージ・データストア（GASスプレッドシートの代替）
+  // このアプリはサーバーを持たず、質問マスタ・回答ともにブラウザの
+  // localStorageにのみ保存される。他の端末・ブラウザとはデータを共有しない。
+  // ===================================================================
+  const QUESTIONS_STORAGE_KEY = 'shiyoMatome_questions';
+  const KOUMUTEN_STORAGE_KEY = 'shiyoMatome_koumuten';
+
+  const DEFAULT_QUESTION_DATA = [
+    ['初期設定', '工法'],
+    ['初期設定', '階高'],
+    ['初期設定', '軒妻の出'],
+    ['初期設定', 'ボルトマスター'],
+    ['初期設定', '表示設定'],
+    ['入力設定', '垂木の配置'],
+    ['入力設定', '垂木ピッチ'],
+    ['入力設定', '窓台まぐさの柱欠き'],
+    ['１F', '玄関柱'],
+    ['１F', '玄関土台'],
+    ['１F', '玄関框'],
+    ['１F', '柱・地束・吊束'],
+    ['１F', '横架材・継手'],
+    ['１F', '床下点検口'],
+    ['１F', '間柱'],
+    ['１F', '筋交'],
+    ['１F', '垂れ壁'],
+    ['１F', 'HD'],
+    ['１F', 'ダクト'],
+    ['１F', '注記'],
+    ['１F', '耐力壁'],
+    ['開口部', 'カットあり？'],
+    ['開口部', '１F中連'],
+    ['開口部', '２F中連'],
+    ['開口部', '掃出し'],
+    ['開口部', '地窓'],
+    ['開口部', '天付け'],
+    ['２F', '階段框'],
+    ['２F', '柱・地束'],
+    ['２F', '横架材'],
+    ['２F', '材成(外周材成など)'],
+    ['２F', '間柱'],
+    ['２F', '筋交'],
+    ['２F', 'HD'],
+    ['２F', 'ダクト'],
+    ['２F', '注記'],
+    ['２F', '耐力壁上'],
+    ['２F', '笠木'],
+    ['２F', '火打'],
+    ['２F', 'パラペット'],
+    ['ベランダ', '下げ'],
+    ['ベランダ', '合板'],
+    ['ベランダ', '笠木'],
+    ['ベランダ', '笠木ボルト'],
+    ['小屋', '横架材'],
+    ['小屋', '材成(外周材成など)'],
+    ['小屋', '束'],
+    ['小屋', '吊木受け'],
+    ['小屋', '火打'],
+    ['小屋', '界壁'],
+    ['小屋', '天井点検口'],
+    ['小屋', '根太'],
+    ['母屋', '母屋'],
+    ['母屋', '母屋ボルト'],
+    ['母屋', '垂木'],
+    ['母屋', '合板の出'],
+    ['母屋', '隅木谷木'],
+    ['端柄材', '方立'],
+    ['端柄材', '間柱受'],
+    ['端柄材', '頭繋ぎ'],
+    ['端柄材', 'スペーサー'],
+    ['合板', '柱間柱欠きクリア'],
+    ['金物', '短冊'],
+    ['金物', 'HD'],
+    ['準備材', '破風鼻隠し']
+  ];
+
+  function buildDefaultQuestions() {
+    return DEFAULT_QUESTION_DATA.map(function (item, i) {
+      const idx = i + 1;
+      return { id: 'Q' + ('000' + idx).slice(-3), category: item[0], title: item[1], standard: '' };
+    });
+  }
+
+  function loadQuestionsFromStore() {
+    try {
+      const raw = localStorage.getItem(QUESTIONS_STORAGE_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch (e) { /* localStorageが使えない環境では初期値にフォールバック */ }
+    const initial = buildDefaultQuestions();
+    saveQuestionsToStore(initial);
+    return initial;
+  }
+
+  function saveQuestionsToStore(list) {
+    try { localStorage.setItem(QUESTIONS_STORAGE_KEY, JSON.stringify(list)); } catch (e) {}
+  }
+
+  // questionList: [{id, category, title, standard}, ...] idが空文字なら新規発番
+  function persistQuestionList(questionList) {
+    let maxNum = 0;
+    questionList.forEach(function (q) {
+      if (q.id && /^Q(\d+)$/.test(q.id)) {
+        const n = parseInt(q.id.replace('Q', ''), 10);
+        if (n > maxNum) maxNum = n;
+      }
+    });
+    const finalized = questionList.map(function (q) {
+      let qId = q.id;
+      if (!qId) {
+        maxNum++;
+        qId = 'Q' + ('000' + maxNum).slice(-3);
+      }
+      return { id: qId, category: q.category || '', title: q.title || '', standard: q.standard || '' };
+    });
+    saveQuestionsToStore(finalized);
+    return finalized;
+  }
+
+  function loadKoumutenStore() {
+    try {
+      const raw = localStorage.getItem(KOUMUTEN_STORAGE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  }
+
+  function saveKoumutenStore(store) {
+    try { localStorage.setItem(KOUMUTEN_STORAGE_KEY, JSON.stringify(store)); } catch (e) {}
+  }
+
+  function listKoumutenNames() {
+    return Object.keys(loadKoumutenStore()).sort();
+  }
+
+  function ensureKoumutenExists(name) {
+    const store = loadKoumutenStore();
+    if (!store[name]) {
+      store[name] = {};
+      saveKoumutenStore(store);
+    }
+  }
+
+  function getKoumutenAnswers(name) {
+    const store = loadKoumutenStore();
+    return store[name] || {};
+  }
+
+  function setKoumutenAnswer(name, qId, value) {
+    const store = loadKoumutenStore();
+    if (!store[name]) store[name] = {};
+    if (value === '' || value === undefined || value === null) {
+      delete store[name][qId];
+    } else {
+      store[name][qId] = value;
+    }
+    saveKoumutenStore(store);
+  }
+
+  // ===== 中断・再開（前回の続き）機能 =====
+  const SESSION_KEY = 'koumuten_hearing_session';
+
+  function saveSession() {
+    if (!koumenName) return;
+    try {
+      localStorage.setItem(SESSION_KEY, JSON.stringify({
+        koumenName: koumenName,
+        currentIndex: currentIndex,
+        total: questions.length
+      }));
+    } catch (e) { /* localStorageが使えない環境では何もしない */ }
+  }
+
+  function loadSession() {
+    try {
+      const raw = localStorage.getItem(SESSION_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) { return null; }
+  }
+
+  function clearSession() {
+    try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
+  }
+
+  function updateResumeBanners() {
+    const session = loadSession();
+    const targets = [
+      { box: 'resumeBannerGuide', detail: 'resumeDetailGuide' },
+      { box: 'resumeBannerStart', detail: 'resumeDetailStart' }
+    ];
+    targets.forEach(function(t) {
+      const box = document.getElementById(t.box);
+      const detail = document.getElementById(t.detail);
+      if (!box) return;
+      if (session && session.koumenName) {
+        box.style.display = '';
+        if (detail) {
+          const pos = (session.currentIndex || 0) + 1;
+          const total = session.total || '?';
+          detail.textContent = session.koumenName + '（' + pos + ' / ' + total + ' 問目）';
+        }
+      } else {
+        box.style.display = 'none';
+      }
+    });
+  }
+
+  function clearSessionAndHide() {
+    if (!confirm('前回の続きの記録を消しますか？\n※入力した回答内容はブラウザに保存されているので消えません。')) return;
+    clearSession();
+    updateResumeBanners();
+  }
+
+  // ===== 工務店一覧（スタート画面） =====
+  function loadKoumutenList() {
+    const box = document.getElementById('koumutenList');
+    const names = listKoumutenNames();
+    if (!names || names.length === 0) {
+      box.innerHTML = '<div class="koumuten-list-empty">まだ工務店データがありません</div>';
+      return;
+    }
+    box.innerHTML = '';
+    names.forEach(function(name) {
+      const chip = document.createElement('div');
+      chip.className = 'koumuten-chip';
+      chip.textContent = name;
+      chip.onclick = function() { loadHearingData(name, 0); };
+      box.appendChild(chip);
+    });
+  }
+
+  // 工務店名を指定してヒアリングデータを読み込み、指定の問番号から開始する
+  function loadHearingData(name, startIndex) {
+    koumenName = name;
+    ensureKoumutenExists(name);
+    questions = loadQuestionsFromStore();
+    answers = getKoumutenAnswers(name);
+    const maxIndex = Math.max(0, questions.length - 1);
+    currentIndex = Math.min(Math.max(0, startIndex || 0), maxIndex);
+    showScreen('hearingScreen');
+    document.getElementById('hearingKoumenName').textContent = koumenName;
+    document.getElementById('progressSlider').max = maxIndex;
+    renderSliderStructure();
+    updateSliderPositions();
+    updateLivePreview();
+  }
+
+  function startHearing() {
+    const name = document.getElementById('koumenName').value.trim();
+    if (!name) { alert('工務店名を入力してください'); return; }
+    loadHearingData(name, 0);
+  }
+
+  function resumeSession() {
+    const session = loadSession();
+    if (!session || !session.koumenName) {
+      alert('再開できる記録が見つかりませんでした。');
+      updateResumeBanners();
+      return;
+    }
+    loadHearingData(session.koumenName, session.currentIndex || 0);
+  }
+
+  function showScreen(screenId) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(screenId).classList.add('active');
+  }
+
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function renderSliderStructure() {
+    const stage = document.getElementById('sliderStage');
+    stage.innerHTML = '';
+
+    questions.forEach((q, index) => {
+      const answerValue = answers[q.id] || '';
+      const card = document.createElement('div');
+      card.className = 'question-card';
+      card.id = 'card_' + index;
+
+      card.innerHTML = `
+        <div class="question-category">` + escapeHtml(q.category) + `</div>
+        <div class="question-title">` + escapeHtml(q.title) + `</div>
+        <div class="answer-area">
+          <div>
+            <div class="input-label">
+              <span>自由入力:</span>
+              <span class="shortcut-tip">次へ＝Ctrl + Enter</span>
+            </div>
+            <textarea class="custom-input" id="input_` + index + `"
+                   placeholder="仕様内容を入力してください"
+                   oninput="onInputChange(` + index + `, '` + q.id + `')"
+                   onkeydown="onInputKeyDown(event, ` + index + `)">` + escapeHtml(answerValue) + `</textarea>
+          </div>
+        </div>
+      `;
+      stage.appendChild(card);
+    });
+  }
+
+  function updateSliderPositions() {
+    questions.forEach((q, index) => {
+      const card = document.getElementById('card_' + index);
+      if (!card) return;
+
+      card.className = 'question-card';
+
+      if (index === currentIndex) {
+        card.classList.add('current-card');
+        setTimeout(() => {
+          const input = document.getElementById('input_' + index);
+          if (input) {
+            input.focus();
+            const len = input.value.length;
+            input.setSelectionRange(len, len);
+          }
+        }, 50);
+      } else if (index === currentIndex - 1) {
+        card.classList.add('prev-card');
+      } else if (index === currentIndex + 1) {
+        card.classList.add('next-card');
+      } else if (index === currentIndex + 2) {
+        card.classList.add('next-next-card');
+      }
+    });
+
+    updateProgress();
+    saveSession();
+  }
+
+  function onInputChange(index, qId) {
+    const val = document.getElementById('input_' + index).value;
+    answers[qId] = val;
+    setKoumutenAnswer(koumenName, qId, val);
+    updateLivePreview();
+  }
+
+  function onInputKeyDown(event, index) {
+    if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+      event.preventDefault();
+      nextQuestion();
+    }
+  }
+
+  function nextQuestion() {
+    if (currentIndex < questions.length - 1) {
+      currentIndex++;
+      updateSliderPositions();
+    } else {
+      showPreview();
+    }
+  }
+
+  function prevQuestion() {
+    if (currentIndex > 0) {
+      currentIndex--;
+      updateSliderPositions();
+    }
+  }
+
+  // 横スクロールバー（range）でカードを直接めくる
+  function onSliderInput(value) {
+    const idx = parseInt(value, 10);
+    if (isNaN(idx) || idx === currentIndex) return;
+    currentIndex = Math.min(Math.max(0, idx), questions.length - 1);
+    updateSliderPositions();
+  }
+
+  function updateProgress() {
+    const answered = Object.values(answers).filter(a => a !== '' && a !== undefined).length;
+    const total = questions.length;
+    const percent = total > 0 ? (currentIndex / Math.max(1, total - 1)) * 100 : 0;
+
+    const slider = document.getElementById('progressSlider');
+    slider.value = currentIndex;
+    slider.style.setProperty('--fill', percent + '%');
+
+    document.getElementById('progressInfo').textContent =
+      '質問 ' + (currentIndex + 1) + ' / ' + total + '  |  入力済み ' + answered + ' 件';
+
+    document.getElementById('btnPrev').disabled = currentIndex === 0;
+    document.getElementById('btnNext').textContent = currentIndex === total - 1 ? '完了 (Ctrl+Enter)' : '次へ (Ctrl+Enter) →';
+  }
+
+  // ===== リアルタイムプレビュー =====
+  const LINE_LIMIT = 50;
+
+  function countOutputLines() {
+    let lineCount = 0;
+    const categoryMap = {};
+    const categoryOrder = [];
+
+    for (const q of questions) {
+      const ans = answers[q.id];
+      if (ans === undefined || ans === '') continue;
+      if (!categoryMap[q.category]) {
+        categoryMap[q.category] = [];
+        categoryOrder.push(q.category);
+      }
+      categoryMap[q.category].push({ title: q.title, content: ans });
+    }
+
+    for (const cat of categoryOrder) {
+      lineCount++;
+      for (const item of categoryMap[cat]) {
+        const lines = String(item.content).split('\n');
+        lineCount++;
+        for (let i = 1; i < lines.length; i++) {
+          if (lines[i].trim() !== '') lineCount++;
+        }
+      }
+    }
+    return lineCount;
+  }
+
+  function updateLineCounter() {
+    const count = countOutputLines();
+    const counterEl = document.getElementById('lineCounter');
+    const warningEl = document.getElementById('lineWarning');
+    if (!counterEl) return;
+
+    counterEl.textContent = count + ' / ' + LINE_LIMIT + ' 行';
+
+    if (count > LINE_LIMIT) {
+      counterEl.classList.add('over-limit');
+      if (warningEl) warningEl.classList.add('visible');
+    } else {
+      counterEl.classList.remove('over-limit');
+      if (warningEl) warningEl.classList.remove('visible');
+    }
+  }
+
+  function updateLivePreview() {
+    const container = document.getElementById('livePreviewBody');
+    if (!container) return;
+
+    const categoryMap = {};
+    const categoryOrder = [];
+
+    for (const q of questions) {
+      const ans = answers[q.id];
+      if (ans === undefined || ans === '') continue;
+
+      if (!categoryMap[q.category]) {
+        categoryMap[q.category] = [];
+        categoryOrder.push(q.category);
+      }
+      categoryMap[q.category].push({ title: q.title, content: ans });
+    }
+
+    if (categoryOrder.length === 0) {
+      container.innerHTML = '<div class="live-preview-empty">入力内容がここにリアルタイムで表示されます</div>';
+      updateLineCounter();
+      return;
+    }
+
+    let html = '';
+    for (const cat of categoryOrder) {
+      html += '<div class="preview-category-title">' + escapeHtml(cat) + '</div>';
+
+      for (const item of categoryMap[cat]) {
+        const lines = String(item.content).split('\n');
+        html += '<div class="preview-item-block">';
+        html += '<div class="preview-line">・<strong>' + escapeHtml(item.title) + '</strong>：' + escapeHtml(lines[0]) + '</div>';
+        for (let i = 1; i < lines.length; i++) {
+          if (lines[i].trim() === '') continue;
+          html += '<div class="preview-subline">' + escapeHtml(lines[i]) + '</div>';
+        }
+        html += '</div>';
+      }
+    }
+
+    container.innerHTML = html;
+    updateLineCounter();
+  }
+
+  function generatePreviewHtml(questionList, answerMap) {
+    const categoryMap = {};
+    const categoryOrder = [];
+
+    for (const q of questionList) {
+      const ans = answerMap[q.id];
+      if (ans === undefined || ans === '') continue;
+
+      if (!categoryMap[q.category]) {
+        categoryMap[q.category] = [];
+        categoryOrder.push(q.category);
+      }
+      categoryMap[q.category].push(ans);
+    }
+
+    if (categoryOrder.length === 0) {
+      return '<div class="preview-line unanswered">特記事項なし（すべて通常仕様）</div>';
+    }
+
+    let html = '';
+    for (const cat of categoryOrder) {
+      html += '<div class="preview-category-title">' + escapeHtml(cat) + '</div>';
+
+      for (const content of categoryMap[cat]) {
+        const lines = String(content).split('\n');
+        html += '<div class="preview-item-block">';
+        html += '<div class="preview-line">・' + escapeHtml(lines[0]) + '</div>';
+        for (let i = 1; i < lines.length; i++) {
+          if (lines[i].trim() === '') continue;
+          html += '<div class="preview-subline">' + escapeHtml(lines[i]) + '</div>';
+        }
+        html += '</div>';
+      }
+    }
+
+    return html;
+  }
+
+  function showPreview() {
+    showScreen('previewScreen');
+    document.getElementById('previewContent').innerHTML = generatePreviewHtml(questions, answers);
+    document.getElementById('previewTitle').textContent = koumenName + ' 工務店仕様書';
+  }
+
+  function copyToClipboard() {
+    const categoryMap = {};
+    const categoryOrder = [];
+
+    for (const q of questions) {
+      const ans = answers[q.id];
+      if (ans === undefined || ans === '') continue;
+
+      if (!categoryMap[q.category]) {
+        categoryMap[q.category] = [];
+        categoryOrder.push(q.category);
+      }
+      categoryMap[q.category].push({ title: q.title, content: ans });
+    }
+
+    if (categoryOrder.length === 0) {
+      alert('コピーする内容がありません。');
+      return;
+    }
+
+    let text = '';
+    for (const cat of categoryOrder) {
+      text += '≪' + cat + '≫\n';
+
+      for (const item of categoryMap[cat]) {
+        const lines = String(item.content).split('\n');
+        text += '・' + item.title + '：' + lines[0] + '\n';
+        for (let i = 1; i < lines.length; i++) {
+          if (lines[i].trim() === '') continue;
+          text += '  ' + lines[i] + '\n';
+        }
+      }
+    }
+
+    navigator.clipboard.writeText(text).then(function() {
+      const btn = document.getElementById('btnCopy');
+      const originalText = btn.textContent;
+      btn.textContent = '✅ コピー完了！';
+      btn.style.background = '#2e7d32';
+      setTimeout(function() {
+        btn.textContent = originalText;
+        btn.style.background = '#4CAF50';
+      }, 2000);
+    }).catch(function(err) {
+      alert('コピーに失敗しました: ' + err);
+    });
+  }
+
+  function backToHearing() {
+    showScreen('hearingScreen');
+    updateSliderPositions();
+    updateLivePreview();
+  }
+
+  // ===================================================================
+  // 質問編集画面
+  // ===================================================================
+
+  function openEditScreen() {
+    previousScreenBeforeEdit = document.querySelector('.screen.active') ? document.querySelector('.screen.active').id : 'guideScreen';
+    showScreen('editScreen');
+    loadQuestionsForEdit();
+  }
+
+  function exitEditScreen() {
+    showScreen(previousScreenBeforeEdit || 'guideScreen');
+    if (previousScreenBeforeEdit === 'startScreen') loadKoumutenList();
+  }
+
+  function loadQuestionsForEdit() {
+    editQuestions = loadQuestionsFromStore();
+    renderEditRows();
+  }
+
+  function renderEditRows() {
+    const container = document.getElementById('editRowsContainer');
+    const emptyNote = document.getElementById('editEmptyNote');
+    container.innerHTML = '';
+
+    if (editQuestions.length === 0) {
+      emptyNote.style.display = 'block';
+      return;
+    }
+    emptyNote.style.display = 'none';
+
+    editQuestions.forEach(function(q, i) {
+      const row = document.createElement('div');
+      row.className = 'edit-row';
+      row.innerHTML =
+        '<div class="qid-display">' + (q.id ? escapeHtml(q.id) : '(新規)') + '</div>' +
+        '<div><input type="text" value="' + escapeHtml(q.category) + '" onchange="updateEditField(' + i + ', \'category\', this.value)"></div>' +
+        '<div><input type="text" value="' + escapeHtml(q.title) + '" onchange="updateEditField(' + i + ', \'title\', this.value)"></div>' +
+        '<div><textarea onchange="updateEditField(' + i + ', \'standard\', this.value)">' + escapeHtml(q.standard) + '</textarea></div>' +
+        '<div class="edit-row-controls">' +
+          '<button onclick="moveEditRow(' + i + ', -1)" title="上へ">↑</button>' +
+          '<button onclick="moveEditRow(' + i + ', 1)" title="下へ">↓</button>' +
+          '<button class="btn-del" onclick="deleteEditRow(' + i + ')" title="削除">×</button>' +
+        '</div>';
+      container.appendChild(row);
+    });
+  }
+
+  function updateEditField(index, field, value) {
+    if (!editQuestions[index]) return;
+    editQuestions[index][field] = value;
+  }
+
+  function moveEditRow(index, dir) {
+    const target = index + dir;
+    if (target < 0 || target >= editQuestions.length) return;
+    const tmp = editQuestions[index];
+    editQuestions[index] = editQuestions[target];
+    editQuestions[target] = tmp;
+    renderEditRows();
+  }
+
+  function deleteEditRow(index) {
+    const q = editQuestions[index];
+    if (!confirm('この質問を削除しますか？\n「' + (q.title || '(無題)') + '」\n※既存の工務店回答に該当する回答があっても、以後は表示・参照されなくなります。')) return;
+    editQuestions.splice(index, 1);
+    renderEditRows();
+  }
+
+  function addEditRow() {
+    editQuestions.push({ id: '', category: '', title: '', standard: '' });
+    renderEditRows();
+    // 追加した行までスクロール
+    setTimeout(function() {
+      const container = document.getElementById('editRowsContainer');
+      container.scrollTop = container.scrollHeight;
+    }, 50);
+  }
+
+  function saveEditedQuestions() {
+    const invalid = editQuestions.some(function(q) { return !q.title || !q.title.trim(); });
+    if (invalid) {
+      alert('タイトルが未入力の質問があります。入力するか削除してください。');
+      return;
+    }
+    editQuestions = persistQuestionList(editQuestions);
+    renderEditRows();
+    alert('質問内容を保存しました。');
+  }
+
+  // ===== 起動時：前回の続きバナーを表示 =====
+  if (document.readyState === 'loading') {
+    window.addEventListener('DOMContentLoaded', updateResumeBanners);
+  } else {
+    updateResumeBanners();
+  }
+</script>
+
+</body>
+</html>
