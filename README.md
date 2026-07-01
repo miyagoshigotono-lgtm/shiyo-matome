@@ -5,8 +5,9 @@
 
 - **`src/`** … Google Apps Script（GAS）版。スプレッドシートをデータベースとして使用
 - **`web/`** … 静的Webアプリ版。バックエンドを持たず、ブラウザの`localStorage`にデータを保存（Vercel/Netlifyなどにそのままデプロイ可能）
+- **`docs/`** … `web/`と同一内容。GitHub Pages用（GitHub Pagesは`docs`フォルダをそのまま公開ソースにできるため）
 
-2つは見た目・操作感は同じですが、データの保存先が異なる別々のアプリとして独立しています。
+3つとも見た目・操作感は同じですが、データの保存先が異なる（`web`と`docs`は同一アプリの複製）別々のアプリとして独立しています。
 
 ## 構成
 
@@ -18,6 +19,9 @@ src/
 
 web/
 └── index.html       # 静的Webアプリ版（バックエンドなし・単一HTMLファイル）
+
+docs/
+└── index.html       # web/index.html と同一内容（GitHub Pages公開用）
 
 vercel.json          # Vercel用設定（web/ を公開ディレクトリに指定）
 netlify.toml         # Netlify用設定（web/ を公開ディレクトリに指定）
@@ -46,6 +50,15 @@ netlify.toml         # Netlify用設定（web/ を公開ディレクトリに指
 1. このリポジトリをNetlifyにインポート
 2. Build command は空欄のまま、Publish directoryは `web`（リポジトリ直下の `netlify.toml` で自動設定済み）
 3. デプロイすると `https://<サイト名>.netlify.app` のようなURLが発行されます
+
+### GitHub Pagesでデプロイ
+
+`docs/index.html`（`web/`と同一内容）をそのまま使います。GitHub Pagesの有効化はリポジトリ設定画面からの手動操作が必要です（APIからの自動設定はサポート対象外のため今回は行っていません）。
+
+1. GitHubリポジトリの `Settings > Pages` を開く
+2. `Build and deployment` の `Source` を `Deploy from a branch` に設定
+3. `Branch` で対象ブランチ（例: `main`）と `/docs` フォルダを選択して `Save`
+4. 数十秒〜数分待つと `https://<ユーザー名>.github.io/<リポジトリ名>/` でアプリが公開されます
 
 ### ローカルで試す
 
