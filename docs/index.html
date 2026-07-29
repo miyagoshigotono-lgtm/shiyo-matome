@@ -626,6 +626,163 @@
   let editQuestions = [];
   let previousScreenBeforeEdit = 'guideScreen';
 
+  // ===================================================================
+  // ローカルストレージ・データストア（GASスプレッドシートの代替）
+  // このアプリはサーバーを持たず、質問マスタ・回答ともにブラウザの
+  // localStorageにのみ保存される。他の端末・ブラウザとはデータを共有しない。
+  // ===================================================================
+  const QUESTIONS_STORAGE_KEY = 'shiyoMatome_questions';
+  const KOUMUTEN_STORAGE_KEY = 'shiyoMatome_koumuten';
+
+  const DEFAULT_QUESTION_DATA = [
+    ['初期設定', '工法'],
+    ['初期設定', '階高'],
+    ['初期設定', '軒妻の出'],
+    ['初期設定', 'ボルトマスター'],
+    ['初期設定', '表示設定'],
+    ['入力設定', '垂木の配置'],
+    ['入力設定', '垂木ピッチ'],
+    ['入力設定', '窓台まぐさの柱欠き'],
+    ['１F', '玄関柱'],
+    ['１F', '玄関土台'],
+    ['１F', '玄関框'],
+    ['１F', '柱・地束・吊束'],
+    ['１F', '横架材・継手'],
+    ['１F', '床下点検口'],
+    ['１F', '間柱'],
+    ['１F', '筋交'],
+    ['１F', '垂れ壁'],
+    ['１F', 'HD'],
+    ['１F', 'ダクト'],
+    ['１F', '注記'],
+    ['１F', '耐力壁'],
+    ['開口部', 'カットあり？'],
+    ['開口部', '１F中連'],
+    ['開口部', '２F中連'],
+    ['開口部', '掃出し'],
+    ['開口部', '地窓'],
+    ['開口部', '天付け'],
+    ['２F', '階段框'],
+    ['２F', '柱・地束'],
+    ['２F', '横架材'],
+    ['２F', '材成(外周材成など)'],
+    ['２F', '間柱'],
+    ['２F', '筋交'],
+    ['２F', 'HD'],
+    ['２F', 'ダクト'],
+    ['２F', '注記'],
+    ['２F', '耐力壁上'],
+    ['２F', '笠木'],
+    ['２F', '火打'],
+    ['２F', 'パラペット'],
+    ['ベランダ', '下げ'],
+    ['ベランダ', '合板'],
+    ['ベランダ', '笠木'],
+    ['ベランダ', '笠木ボルト'],
+    ['小屋', '横架材'],
+    ['小屋', '材成(外周材成など)'],
+    ['小屋', '束'],
+    ['小屋', '吊木受け'],
+    ['小屋', '火打'],
+    ['小屋', '界壁'],
+    ['小屋', '天井点検口'],
+    ['小屋', '根太'],
+    ['母屋', '母屋'],
+    ['母屋', '母屋ボルト'],
+    ['母屋', '垂木'],
+    ['母屋', '合板の出'],
+    ['母屋', '隅木谷木'],
+    ['端柄材', '方立'],
+    ['端柄材', '間柱受'],
+    ['端柄材', '頭繋ぎ'],
+    ['端柄材', 'スペーサー'],
+    ['合板', '柱間柱欠きクリア'],
+    ['金物', '短冊'],
+    ['金物', 'HD'],
+    ['準備材', '破風鼻隠し']
+  ];
+
+  function buildDefaultQuestions() {
+    return DEFAULT_QUESTION_DATA.map(function (item, i) {
+      const idx = i + 1;
+      return { id: 'Q' + ('000' + idx).slice(-3), category: item[0], title: item[1], standard: '' };
+    });
+  }
+
+  function loadQuestionsFromStore() {
+    try {
+      const raw = localStorage.getItem(QUESTIONS_STORAGE_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch (e) { /* localStorageが使えない環境では初期値にフォールバック */ }
+    const initial = buildDefaultQuestions();
+    saveQuestionsToStore(initial);
+    return initial;
+  }
+
+  function saveQuestionsToStore(list) {
+    try { localStorage.setItem(QUESTIONS_STORAGE_KEY, JSON.stringify(list)); } catch (e) {}
+  }
+
+  // questionList: [{id, category, title, standard}, ...] idが空文字なら新規発番
+  function persistQuestionList(questionList) {
+    let maxNum = 0;
+    questionList.forEach(function (q) {
+      if (q.id && /^Q(\d+)$/.test(q.id)) {
+        const n = parseInt(q.id.replace('Q', ''), 10);
+        if (n > maxNum) maxNum = n;
+      }
+    });
+    const finalized = questionList.map(function (q) {
+      let qId = q.id;
+      if (!qId) {
+        maxNum++;
+        qId = 'Q' + ('000' + maxNum).slice(-3);
+      }
+      return { id: qId, category: q.category || '', title: q.title || '', standard: q.standard || '' };
+    });
+    saveQuestionsToStore(finalized);
+    return finalized;
+  }
+
+  function loadKoumutenStore() {
+    try {
+      const raw = localStorage.getItem(KOUMUTEN_STORAGE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  }
+
+  function saveKoumutenStore(store) {
+    try { localStorage.setItem(KOUMUTEN_STORAGE_KEY, JSON.stringify(store)); } catch (e) {}
+  }
+
+  function listKoumutenNames() {
+    return Object.keys(loadKoumutenStore()).sort();
+  }
+
+  function ensureKoumutenExists(name) {
+    const store = loadKoumutenStore();
+    if (!store[name]) {
+      store[name] = {};
+      saveKoumutenStore(store);
+    }
+  }
+
+  function getKoumutenAnswers(name) {
+    const store = loadKoumutenStore();
+    return store[name] || {};
+  }
+
+  function setKoumutenAnswer(name, qId, value) {
+    const store = loadKoumutenStore();
+    if (!store[name]) store[name] = {};
+    if (value === '' || value === undefined || value === null) {
+      delete store[name][qId];
+    } else {
+      store[name][qId] = value;
+    }
+    saveKoumutenStore(store);
+  }
+
   // ===== 中断・再開（前回の続き）機能 =====
   const SESSION_KEY = 'koumuten_hearing_session';
 
@@ -675,7 +832,7 @@
   }
 
   function clearSessionAndHide() {
-    if (!confirm('前回の続きの記録を消しますか？\n※入力した回答内容はスプレッドシートに保存されているので消えません。')) return;
+    if (!confirm('前回の続きの記録を消しますか？\n※入力した回答内容はブラウザに保存されているので消えません。')) return;
     clearSession();
     updateResumeBanners();
   }
@@ -683,40 +840,35 @@
   // ===== 工務店一覧（スタート画面） =====
   function loadKoumutenList() {
     const box = document.getElementById('koumutenList');
-    box.innerHTML = '<div class="koumuten-list-empty">読み込み中...</div>';
-    google.script.run.withSuccessHandler(function(names) {
-      if (!names || names.length === 0) {
-        box.innerHTML = '<div class="koumuten-list-empty">まだ工務店データがありません</div>';
-        return;
-      }
-      box.innerHTML = '';
-      names.forEach(function(name) {
-        const chip = document.createElement('div');
-        chip.className = 'koumuten-chip';
-        chip.textContent = name;
-        chip.onclick = function() { loadHearingData(name, 0); };
-        box.appendChild(chip);
-      });
-    }).withFailureHandler(function() {
-      box.innerHTML = '<div class="koumuten-list-empty">読み込みに失敗しました</div>';
-    }).listKoumuten();
+    const names = listKoumutenNames();
+    if (!names || names.length === 0) {
+      box.innerHTML = '<div class="koumuten-list-empty">まだ工務店データがありません</div>';
+      return;
+    }
+    box.innerHTML = '';
+    names.forEach(function(name) {
+      const chip = document.createElement('div');
+      chip.className = 'koumuten-chip';
+      chip.textContent = name;
+      chip.onclick = function() { loadHearingData(name, 0); };
+      box.appendChild(chip);
+    });
   }
 
   // 工務店名を指定してヒアリングデータを読み込み、指定の問番号から開始する
   function loadHearingData(name, startIndex) {
     koumenName = name;
-    google.script.run.withSuccessHandler(function(data) {
-      questions = data.questions;
-      answers = data.answers;
-      const maxIndex = Math.max(0, questions.length - 1);
-      currentIndex = Math.min(Math.max(0, startIndex || 0), maxIndex);
-      showScreen('hearingScreen');
-      document.getElementById('hearingKoumenName').textContent = koumenName;
-      document.getElementById('progressSlider').max = maxIndex;
-      renderSliderStructure();
-      updateSliderPositions();
-      updateLivePreview();
-    }).getQuestionsAndAnswers(name);
+    ensureKoumutenExists(name);
+    questions = loadQuestionsFromStore();
+    answers = getKoumutenAnswers(name);
+    const maxIndex = Math.max(0, questions.length - 1);
+    currentIndex = Math.min(Math.max(0, startIndex || 0), maxIndex);
+    showScreen('hearingScreen');
+    document.getElementById('hearingKoumenName').textContent = koumenName;
+    document.getElementById('progressSlider').max = maxIndex;
+    renderSliderStructure();
+    updateSliderPositions();
+    updateLivePreview();
   }
 
   function startHearing() {
@@ -809,7 +961,7 @@
   function onInputChange(index, qId) {
     const val = document.getElementById('input_' + index).value;
     answers[qId] = val;
-    google.script.run.saveOneAnswer(koumenName, qId, val);
+    setKoumutenAnswer(koumenName, qId, val);
     updateLivePreview();
   }
 
@@ -952,12 +1104,48 @@
     updateLineCounter();
   }
 
+  function generatePreviewHtml(questionList, answerMap) {
+    const categoryMap = {};
+    const categoryOrder = [];
+
+    for (const q of questionList) {
+      const ans = answerMap[q.id];
+      if (ans === undefined || ans === '') continue;
+
+      if (!categoryMap[q.category]) {
+        categoryMap[q.category] = [];
+        categoryOrder.push(q.category);
+      }
+      categoryMap[q.category].push(ans);
+    }
+
+    if (categoryOrder.length === 0) {
+      return '<div class="preview-line unanswered">特記事項なし（すべて通常仕様）</div>';
+    }
+
+    let html = '';
+    for (const cat of categoryOrder) {
+      html += '<div class="preview-category-title">' + escapeHtml(cat) + '</div>';
+
+      for (const content of categoryMap[cat]) {
+        const lines = String(content).split('\n');
+        html += '<div class="preview-item-block">';
+        html += '<div class="preview-line">・' + escapeHtml(lines[0]) + '</div>';
+        for (let i = 1; i < lines.length; i++) {
+          if (lines[i].trim() === '') continue;
+          html += '<div class="preview-subline">' + escapeHtml(lines[i]) + '</div>';
+        }
+        html += '</div>';
+      }
+    }
+
+    return html;
+  }
+
   function showPreview() {
     showScreen('previewScreen');
-    google.script.run.withSuccessHandler(function(html) {
-      document.getElementById('previewContent').innerHTML = html;
-      document.getElementById('previewTitle').textContent = koumenName + ' 工務店仕様書';
-    }).generatePreview(koumenName, questions, answers);
+    document.getElementById('previewContent').innerHTML = generatePreviewHtml(questions, answers);
+    document.getElementById('previewTitle').textContent = koumenName + ' 工務店仕様書';
   }
 
   function copyToClipboard() {
@@ -1031,12 +1219,8 @@
   }
 
   function loadQuestionsForEdit() {
-    const container = document.getElementById('editRowsContainer');
-    container.innerHTML = '<div class="edit-empty-note">読み込み中...</div>';
-    google.script.run.withSuccessHandler(function(list) {
-      editQuestions = list || [];
-      renderEditRows();
-    }).getQuestionsForEdit();
+    editQuestions = loadQuestionsFromStore();
+    renderEditRows();
   }
 
   function renderEditRows() {
@@ -1083,7 +1267,7 @@
 
   function deleteEditRow(index) {
     const q = editQuestions[index];
-    if (!confirm('この質問を削除しますか？\n「' + (q.title || '(無題)') + '」\n※全工務店の回答シートから該当する回答も実質的に参照されなくなります。')) return;
+    if (!confirm('この質問を削除しますか？\n「' + (q.title || '(無題)') + '」\n※既存の工務店回答に該当する回答があっても、以後は表示・参照されなくなります。')) return;
     editQuestions.splice(index, 1);
     renderEditRows();
   }
@@ -1104,13 +1288,9 @@
       alert('タイトルが未入力の質問があります。入力するか削除してください。');
       return;
     }
-    google.script.run.withSuccessHandler(function(savedList) {
-      editQuestions = savedList;
-      renderEditRows();
-      alert('質問内容を保存しました。');
-    }).withFailureHandler(function(err) {
-      alert('保存に失敗しました: ' + err);
-    }).saveQuestions(editQuestions);
+    editQuestions = persistQuestionList(editQuestions);
+    renderEditRows();
+    alert('質問内容を保存しました。');
   }
 
   // ===== 起動時：前回の続きバナーを表示 =====
